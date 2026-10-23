@@ -172,6 +172,32 @@ label.check input{width:22px;height:22px;margin:0;accent-color:var(--accent);fle
 .repitem .a{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .repitem .a .btn{padding:8px 12px;font-size:13.5px}
 .modal select,.modal textarea,.modal input{font:500 16px var(--body)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:4px 0 14px}
+.facts div{min-width:0}
+.facts dt{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.facts dd{margin:2px 0 0;font:600 15px var(--body);color:var(--ink)}
+.facts .wide{grid-column:1/-1}
+.foto{display:grid;gap:8px;margin:0 0 14px}
+.foto img{width:100%;max-height:340px;object-fit:cover;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.foto img{max-height:260px}
+label.fotobtn{display:inline-flex;justify-content:center;cursor:pointer;text-transform:none;letter-spacing:0;font:600 14.5px var(--body);color:var(--ink)}
+.reportbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.modebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--gold) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);font-size:13.5px}
+.modebar .linkbtn{font-size:13.5px}
+.meter{display:grid;gap:6px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px 14px;margin:0 0 12px;cursor:pointer;color:var(--ink);font:inherit}
+.meter .mt{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:700 13px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.meter .mt b{font:800 22px var(--display);letter-spacing:0;color:var(--mcol,var(--done))}
+.bar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--muted) 18%,transparent);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:var(--mcol,var(--done));transition:width .6s ease}
+.meter .ms{font-size:13px;color:var(--muted)}
+.gauge{display:grid;justify-items:center;gap:2px;margin:4px 0 10px}
+.gauge svg{width:min(100%,300px);height:auto}
+.gauge .pct{font:800 44px var(--display);color:var(--mcol);line-height:1;margin-top:-74px}
+.gauge .lbl{font-size:13.5px;color:var(--muted);margin-top:6px;text-align:center}
+.brk{display:grid;gap:9px;margin:6px 0 12px}
+.brk .r{display:grid;grid-template-columns:118px 1fr 34px;gap:10px;align-items:center;font-size:13.5px}
+.brk .r b{text-align:right;font:800 14px var(--display);font-variant-numeric:tabular-nums}
+.brk .bar{height:9px}
 .modal{position:fixed;inset:0;z-index:20;background:rgba(20,10,12,.55);display:grid;place-items:center;padding:20px}
 .modal .box{background:var(--panel);color:var(--ink);border-radius:16px;border-top:4px solid var(--gold);box-shadow:var(--shadow);width:min(100%,360px);padding:18px;display:grid;gap:12px}
 .modal h3{margin:0;font:800 17px var(--display);color:var(--accent)}
@@ -376,7 +402,7 @@ svg.addEventListener("pointerdown",e=>{
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   const pin=e.target.closest&&e.target.closest(".pin");
   if (ptrs.size===1){
-    if (pin && !placing){ const p=poles.find(q=>q.id===pin.dataset.id); gest={type:"pin",p,sx:e.clientX,sy:e.clientY,moved:false,orig:[p.lat,p.lon]}; }
+    if (pin && (!placing || rol!=="admin")){ const p=poles.find(q=>q.id===pin.dataset.id); gest={type:"pin",p,sx:e.clientX,sy:e.clientY,moved:false,orig:[p.lat,p.lon]}; }
     else gest={type:"pan",sx:e.clientX,sy:e.clientY,tx:view.tx,ty:view.ty,moved:false};
   } else if (ptrs.size===2){
     if (gest&&gest.type==="pin"&&gest.p) delete gest.p._drag;
@@ -400,6 +426,7 @@ function endPtr(e){
   if (gest&&ptrs.size===0){
     if (gest.type==="pin"){
       if (gest.moved){ const [x,y]=gest.p._drag; delete gest.p._drag; const [lat,lon]=wToLL(x,y); movePole(gest.p,lat,lon,gest.orig); }
+      else if (placing && rol!=="admin"){ const q=gest.p; setPlacing(false); reportModal({posteId:q.id,posteNum:q.poste||"S/N",lat:q.lat,lon:q.lon,titulo:`Poste ${q.poste||"S/N"} · ${q.ubicacion||""}`}); }
       else { selected=gest.p.id; pendingNew=null; openDetail(gest.p); }
     } else if (gest.type==="pan" && !gest.moved){
       if (placing){ const [x,y]=fromS(e.clientX-r.left,e.clientY-r.top); pendingNew={x,y}; setPlacing(false); openNew(); }
@@ -432,7 +459,8 @@ function summary(){
   const orb=$("openRep"); if(orb) orb.onclick=()=>openReports();
   const fabT=$("btnAdd"); if(fabT){ const lbl=rol==="admin"?"Nuevo poste":"Reportar poste"; if(!fabT.dataset.l||fabT.dataset.l!==lbl){ fabT.dataset.l=lbl; fabT.lastChild.textContent=lbl; } }
 }
-function setPlacing(on){ placing=on; $("placeBanner").hidden=!on; $("placeMsg").textContent = rol==="admin" ? "Toca el croquis donde está el poste o usa tu ubicación" : "Marca el poste que quieres reportar: toca el croquis o usa tu ubicación"; if(on){closeSheet(); pendingNew=null; drawPins();} }
+function setPlacing(on){ placing=on; $("placeBanner").hidden=!on; $("pasteLoc").hidden = rol!=="admin";
+  $("placeMsg").textContent = rol==="admin" ? "Toca el croquis donde está el poste o usa tu ubicación" : "Toca el poste que quieres reportar. Si no está en el mapa, toca su lugar o usa tu ubicación."; if(on){closeSheet(); pendingNew=null; drawPins();} }
 let creating=null;
 const nextNum=()=>Math.max(0,...poles.map(q=>q.num||0))+1;
 function closeSheet(){ $("sheet").classList.remove("compact"); $("sheet").hidden=true; $("sheet").innerHTML=""; selected=null; pendingNew=null; creating=null; drawPins(); }
@@ -497,17 +525,49 @@ function wireLoc(p,isNew){
   inp.addEventListener("input",apply); inp.addEventListener("paste",()=>setTimeout(apply,0));
 }
 function wireFalla(p){ const f=$("f-falla"), w=$("estadoWrap"); if(!f) return; f.onchange=()=>{ const t=tipoDe(f.value)||p.tipo; if(w) w.hidden=(t==="ok"||!f.value); const cw=$("crewWrap"); if(cw) cw.hidden=(t==="ok"||!f.value); const tag=$("sheetTag"); if(tag){ const q={...p,tipo:t,estado:p.estado}; tag.style.background=colorOf(q); tag.textContent=labelOf(q);} }; }
+const fotoURL = id => `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200`;
+function fotoH(p, canUpload){
+  const img = p.foto ? `<img src="${fotoURL(p.foto)}" alt="Foto del poste ${esc(p.poste||"S/N")}" loading="lazy" referrerpolicy="no-referrer">` : "";
+  const btn = canUpload ? `<label class="btn fotobtn" for="fotoIn"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${p.foto?"Cambiar foto":"Agregar foto del poste"}</label><input type="file" id="fotoIn" accept="image/*" capture="environment" hidden>` : "";
+  return (img||btn) ? `<div class="foto">${img}${btn}</div>` : "";
+}
+function resizeImage(file, max){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(file); const im=new Image();
+  im.onload=()=>{ const sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)); const c=document.createElement("canvas"); c.width=Math.round(im.naturalWidth*sc); c.height=Math.round(im.naturalHeight*sc);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.74).split(",")[1]); };
+  im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("img")); }; im.src=u; }); }
+function wireFoto(p){ const fi=$("fotoIn"); if(!fi) return;
+  fi.onchange=async()=>{ const f=fi.files&&fi.files[0]; if(!f) return; toast("Subiendo foto…");
+    let b64; try{ b64=await resizeImage(f,1280); }catch(e){ toast("No se pudo leer la foto."); return; }
+    const ok=await guard(async()=>{ const r=await apiPost({action:"foto",id:p.id,data:b64,mime:"image/jpeg"}); const now=nowISO(); const hist=histPush(p,p.foto?"Se cambió la foto":"Se agregó foto");
+      await coll.doc(p.id).update({historial:hist,actualizado:now}); cache=cache.map(q=>q.id===p.id?{...q,foto:r.foto}:q); p.foto=r.foto; p.historial=hist; emit(); },"Foto guardada");
+    if(ok) openDetail(p); };
+}
+function openVecino(p){
+  const sh=$("sheet"); sh.hidden=false; const nr=repCounts[p.id]||0;
+  const seg = p.tipo==="ok" ? "Funciona bien" : p.estado==="atendido" ? `${p.tipo==="poda"?"Podado":"Reparado"}${p.fechaReparacion?" el "+fecha(p.fechaReparacion):""}` : "Pendiente de atención";
+  sh.innerHTML = head(p,false) + fotoH(p,false) +
+    `<dl class="facts"><div><dt>Cómo está</dt><dd>${esc(p.falla||"—")}</dd></div><div><dt>Seguimiento</dt><dd>${esc(seg)}</dd></div>
+      <div class="wide"><dt>Calle</dt><dd>${esc(p.ubicacion||"—")}</dd></div>${p.entre?`<div class="wide"><dt>Entre calles</dt><dd>${esc(p.entre)}</dd></div>`:""}</dl>
+    <button type="button" class="btn reportbtn primary" id="btnReport"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>Reportar una falla de este poste</button>
+    ${nr?`<div class="hint" style="margin:-6px 0 12px">Este poste ya tiene ${nr} ${nr===1?"reporte":"reportes"} en revisión del comité.</div>`:""}
+    <div class="actions"><a class="btn" href="${gmaps(p.lat,p.lon)}" target="_blank" rel="noopener">Ver en Google Maps</a></div>
+    <div class="meta">¿Eres del comité o de mantenimiento? <button type="button" class="linkbtn" id="vLogin">Entrar con clave</button></div>`;
+  $("btnClose").onclick=closeSheet;
+  $("btnReport").onclick=()=>reportModal({posteId:p.id,posteNum:p.poste||"S/N",lat:p.lat,lon:p.lon,titulo:`Poste ${p.poste||"S/N"} · ${p.ubicacion||""}`});
+  $("vLogin").onclick=async()=>{ if(await askClave()) openDetail(p); };
+}
 function openDetail(p){
+  if(!rol) return openVecino(p);
   const sh=$("sheet"); sh.hidden=false;
   const segH = p.tipo!=="ok" ? `<div class="seglbl">Seguimiento de la reparación</div><div class="seg" role="group" aria-label="Seguimiento">${Object.entries(ESTADOS).map(([k,v])=>`<button type="button" data-e="${k}" aria-pressed="${(p.estado||"pendiente")===k}">${estTxt(p,k)}</button>`).join("")}</div>` : "";
   const H = (Array.isArray(p.historial)?p.historial:[]).slice().reverse();
   const histH = `<details class="hist"><summary>Historial${H.length?` (${H.length})`:""}</summary><ol>${H.map(h=>`<li><time>${esc(fechaHora(h.f))}</time><span>${esc(h.t)}</span></li>`).join("")}${p.origen&&!p.origen.startsWith("App")?`<li><time>22/10/26</time><span>Reportado (${esc(p.origen)})</span></li>`:""}</ol></details>`;
   const nr=repCounts[p.id]||0;
   const repH = `<button type="button" class="btn reportbtn" id="btnReport"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>Reportar falla de este poste${nr?` · ${nr} ${nr===1?"reporte abierto":"reportes abiertos"}`:""}</button>`;
-  sh.innerHTML = head(p,false) + (rol==="admin"?"":repH) + segH + formHTML(p,false) + `<div class="meta">#${p.num??"—"}${p.actualizado?` · Actualizado ${esc(fechaHora(p.actualizado))}`:""} · Para moverlo, arrastra el punto con el dedo.</div>` + histH;
+  sh.innerHTML = head(p,false) + fotoH(p,true) + (rol==="admin"?"":repH) + segH + formHTML(p,false) + `<div class="meta">#${p.num??"—"}${p.actualizado?` · Actualizado ${esc(fechaHora(p.actualizado))}`:""} · Para moverlo, arrastra el punto con el dedo.</div>` + histH;
   $("btnClose").onclick=closeSheet;
   $("pform").onsubmit=async ev=>{ev.preventDefault(); const o=readForm(p); delete p._loc; await saveEdit(p,o);};
-  wireLoc(p,false); wireFalla(p);
+  wireLoc(p,false); wireFalla(p); wireFoto(p);
   const rb=$("btnReport"); if(rb) rb.onclick=()=>reportModal({posteId:p.id,posteNum:p.poste||"S/N",lat:p.lat,lon:p.lon,titulo:`Poste ${p.poste||"S/N"} · ${p.ubicacion||""}`});
   sh.querySelectorAll(".seg button").forEach(b=>b.onclick=async()=>{ const e=b.dataset.e; if((p.estado||"pendiente")===e) return;
     const now=nowISO(); const upd={estado:e,actualizado:now,historial:histPush(p,`Seguimiento: ${estTxt(p,e)}`),fechaReparacion:e==="atendido"?now:null};
@@ -542,11 +602,12 @@ function openList(){
     $("btnClose").onclick=closeSheet;
     sh.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{listFilter=b.dataset.f;render();});
     const dlb=$("btnDl"); if(dlb) dlb.onclick=()=>downloadXlsx(items, f);
-    const ed=document.createElement("div"); ed.className="editor"; ed.style.flexWrap="wrap";
-    ed.innerHTML = rol==="admin" ? `<span>Entraste como <b>Comité (admin)</b>.</span><button type="button" class="linkbtn" id="edTmp">Claves temporales</button><button type="button" class="linkbtn" id="edPw">Cambiar clave</button><button type="button" class="linkbtn" id="edOut">Salir</button>`
-      : rol==="operador" ? `<span>Entraste como <b>Operador</b>${rolExp?" · vence "+esc(fecha(rolExp)):""}.</span><button type="button" class="linkbtn" id="edOut">Salir</button>`
-      : `<span>Estás como <b style="color:var(--muted)">vecino</b> (solo ver).</span><button type="button" class="linkbtn" id="edIn">Entrar con clave</button>`;
-    sh.appendChild(ed);
+    const ed=document.createElement("div"); ed.className="modebar";
+    ed.innerHTML = rol==="admin" ? `<span>Modo: <b>Comité (admin)</b></span><button type="button" class="linkbtn" id="edTmp">Claves temporales</button><button type="button" class="linkbtn" id="edPw">Cambiar clave</button><button type="button" class="linkbtn" id="edOut">Salir</button>`
+      : rol==="operador" ? `<span>Modo: <b>Operador</b>${rolExp?" · vence "+esc(fecha(rolExp)):""}</span><button type="button" class="linkbtn" id="edOut">Salir</button>`
+      : `<span>Modo: <b>Vecino</b> (ver y reportar)</span><button type="button" class="linkbtn" id="edIn">Entrar como comité u operador</button>`;
+    sh.querySelector(".shead").after(ed);
+    ed.insertAdjacentHTML("afterend", meterCardH()); const om=$("openMeter"); if(om) om.onclick=openMeter;
     const eo=$("edOut"); if(eo) eo.onclick=()=>{ setClave(""); render(); toast("Saliste. Ahora estás como vecino."); };
     const ei=$("edIn"); if(ei) ei.onclick=async()=>{ if(await askClave()) render(); };
     const ep=$("edPw"); if(ep) ep.onclick=()=>changeClave();
@@ -560,8 +621,8 @@ function loadXLSX(){ return new Promise((res,rej)=>{ if(window.XLSX) return res(
 async function downloadXlsx(items, f){
   toast("Preparando el archivo…");
   let X; try{ X=await loadXLSX(); }catch(e){ toast("No se pudo preparar el archivo. Revisa tu conexión."); return; }
-  const rows=items.map(p=>({"No.":p.num??"","Poste":p.poste||"S/N","Calle / referencia":p.ubicacion||"","Entre calles":p.entre||"","Cómo está":p.falla||"","Atención":p.tipo==="ok"?"Funciona bien":(TIPOS[p.tipo]||TIPOS.reparacion).txt,"Seguimiento":p.tipo==="ok"?"":estTxt(p,p.estado||"pendiente"),"Cuadrilla":p.cuadrilla?("Cuadrilla "+p.cuadrilla):"","Número legible":legibleOf(p)?"Sí":"No","Fecha de reparación":p.fechaReparacion?fecha(p.fechaReparacion):"","Notas":p.notas||"","Latitud":p.lat,"Longitud":p.lon,"Google Maps":gmaps(p.lat,p.lon)}));
-  const ws=X.utils.json_to_sheet(rows); ws["!cols"]=[{wch:5},{wch:16},{wch:34},{wch:32},{wch:20},{wch:16},{wch:12},{wch:12},{wch:10},{wch:12},{wch:30},{wch:11},{wch:11},{wch:48}];
+  const rows=items.map(p=>({"No.":p.num??"","Poste":p.poste||"S/N","Calle / referencia":p.ubicacion||"","Entre calles":p.entre||"","Cómo está":p.falla||"","Atención":p.tipo==="ok"?"Funciona bien":(TIPOS[p.tipo]||TIPOS.reparacion).txt,"Seguimiento":p.tipo==="ok"?"":estTxt(p,p.estado||"pendiente"),"Cuadrilla":p.cuadrilla?("Cuadrilla "+p.cuadrilla):"","Número legible":legibleOf(p)?"Sí":"No","Fecha de reparación":p.fechaReparacion?fecha(p.fechaReparacion):"","Notas":p.notas||"","Latitud":p.lat,"Longitud":p.lon,"Google Maps":gmaps(p.lat,p.lon),"Foto":p.foto?`https://drive.google.com/file/d/${p.foto}/view`:""}));
+  const ws=X.utils.json_to_sheet(rows); ws["!cols"]=[{wch:5},{wch:16},{wch:34},{wch:32},{wch:20},{wch:16},{wch:12},{wch:12},{wch:10},{wch:12},{wch:30},{wch:11},{wch:11},{wch:48},{wch:48}];
   const wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,"Postes");
   const buf=X.write(wb,{bookType:"xlsx",type:"array"});
   const d=new Date(); const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -569,6 +630,23 @@ async function downloadXlsx(items, f){
   const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},4000);
   toast("Archivo descargado");
+}
+function meterStats(){ const total=poles.length; const ok=poles.filter(isGreen).length; const bad=poles.filter(p=>!isGreen(p));
+  const c=t=>bad.filter(p=>p.tipo===t).length; const pct= total? Math.round(ok*100/total) : 0;
+  const col = pct>=80?"var(--done)":pct>=50?"var(--gold)":"var(--rep)"; return {total,ok,pct,col,rep:c("reparacion"),falta:c("falta"),revisar:c("revisar"),poda:c("poda")}; }
+function meterCardH(){ const m=meterStats(); return `<button type="button" class="meter" id="openMeter" style="--mcol:${m.col}"><div class="mt"><span>Funcionamiento del alumbrado</span><b>${m.pct}%</b></div><div class="bar" role="img" aria-label="${m.pct} por ciento funcionando"><i style="width:${m.pct}%"></i></div><div class="ms">${m.ok} de ${m.total} postes registrados funcionan · Ver medidor</div></button>`; }
+function openMeter(){
+  closeSheet(); const sh=$("sheet"); sh.hidden=false; const m=meterStats();
+  const R=110, C=Math.PI*R, off=C*(1-m.pct/100);
+  const row=(t,n,col)=>`<div class="r"><span>${t}</span><div class="bar"><i style="width:${m.total?Math.round(n*100/m.total):0}%;background:${col}"></i></div><b>${n}</b></div>`;
+  sh.innerHTML=`<div class="grab"></div><div class="shead"><div class="t"><h2>Medidor del alumbrado</h2><div class="sub" style="color:var(--muted);font-size:13px">Fraccionamiento Trinidad de las Huertas</div></div><button class="x" type="button" id="btnClose" aria-label="Cerrar">×</button></div>
+    <div class="gauge" style="--mcol:${m.col}"><svg viewBox="0 0 260 166" aria-hidden="true"><path d="M20 135 A110 110 0 0 1 240 135" fill="none" stroke="color-mix(in srgb, var(--muted) 20%, transparent)" stroke-width="22" stroke-linecap="round"/><path d="M20 135 A110 110 0 0 1 240 135" fill="none" stroke="${m.col}" stroke-width="22" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/><text x="20" y="162" font-size="11" fill="currentColor" opacity=".6" text-anchor="middle">0</text><text x="240" y="162" font-size="11" fill="currentColor" opacity=".6" text-anchor="middle">100</text></svg>
+      <div class="pct">${m.pct}%</div><div class="lbl">del alumbrado registrado funciona<br><b style="color:var(--ink)">${m.ok} de ${m.total}</b> postes</div></div>
+    <div class="seglbl">Desglose</div>
+    <div class="brk">${row("Funcionan",m.ok,"var(--done)")}${row("Por reparar",m.rep,"var(--rep)")}${row("Sin luminaria",m.falta,"var(--falta)")}${row("Requiere poda",m.poda,"var(--poda)")}${row("Revisar poste",m.revisar,"var(--rev)")}</div>
+    <div class="hint">El porcentaje se calcula con los postes registrados. Para que refleje todo el fraccionamiento, registren también los postes que funcionan bien (Nuevo poste → “Funciona bien”).</div>
+    <div class="actions" style="margin-top:12px"><button type="button" class="btn" id="mBack">Ver lista de postes</button></div>`;
+  $("btnClose").onclick=closeSheet; $("mBack").onclick=openList;
 }
 function focusPole(p){ const r=svg.getBoundingClientRect(); const [x,y]=llToW(p.lat,p.lon); const s=Math.max(view.s,3); view={s,tx:r.width/2-x*s,ty:r.height*0.3-y*s}; selected=p.id; draw(); openDetail(p); }
 
