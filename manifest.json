@@ -1,0 +1,15 @@
+{
+  "name": "Postes Trinidad de las Huertas",
+  "short_name": "Postes TH",
+  "description": "Croquis del Comité Vecinal para el seguimiento del alumbrado del Fraccionamiento Trinidad de las Huertas.",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf6ef",
+  "theme_color": "#7a1f2b",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}
